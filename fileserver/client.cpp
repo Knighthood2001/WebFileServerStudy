@@ -76,24 +76,6 @@ int main() {
             continue;
         }
         if (cmd == "upload"){//上传文件
-            // std::ifstream file(filename, std::ios::binary);
-            // if (!file.is_open()) {
-            //     std::cerr << "无法打开文件: " << filename << std::endl;
-            //     close(sock);
-            //     continue;
-            // }
-
-            // // 发送命令：UPLOAD filename\n
-            // std::string command = "UPLOAD " + only_filename + "\n";
-            // send(sock, command.c_str(), command.size(), 0);
-            // // 发送文件内容
-            // char buffer[BUFFER_SIZE];
-            // while (file.read(buffer, BUFFER_SIZE) || file.gcount() > 0) {
-            //     send(sock, buffer, file.gcount(), 0);
-            // }
-
-            // file.close();
-            // std::cout << "上传完成: " << only_filename << std::endl;
             std::ifstream file(filename, std::ios::binary);
             if (!file.is_open()) {
                 std::cerr << "无法打开文件: " << filename << std::endl;
@@ -101,13 +83,12 @@ int main() {
                 continue;
             }
         
-            // // 提取文件名
-            // std::string only_filename = filename.substr(filename.find_last_of("/\\") + 1);
-        
             // 获取文件大小
             file.seekg(0, std::ios::end);
             size_t file_size = file.tellg();
             file.seekg(0, std::ios::beg);
+            
+            std::cout << "开始上传文件: " << only_filename << " (总大小: " << file_size << " 字节)" << std::endl;
         
             // 发送命令：UPLOAD filename\n
             std::string command = "UPLOAD " + only_filename + "\n";
@@ -119,6 +100,7 @@ int main() {
         
             // 发送文件内容
             char buffer[BUFFER_SIZE];
+            size_t sent = 0;
             while (file.read(buffer, BUFFER_SIZE) || file.gcount() > 0) {
                 ssize_t bytes_sent = send(sock, buffer, file.gcount(), 0);
                 if (bytes_sent < 0) {
@@ -126,11 +108,22 @@ int main() {
                     close(sock);
                     break;
                 }
+                sent += bytes_sent;
+                
+                // 每发送1MB显示一次进度，或者在发送完成时显示
+                if (sent % (1024 * 1024) == 0 || sent == file_size) {
+                    float progress = (float)sent / file_size * 100;
+                    std::cout << "已上传: " << sent << "/" << file_size 
+                             << " 字节 (" << std::fixed << std::setprecision(2) << progress << "%)" << std::endl;
+                }
             }
         
             file.close();
-            std::cout << "上传完成: " << only_filename << std::endl;
-
+            if (sent < file_size) {
+                std::cerr << "上传未完成，实际发送: " << sent << "/" << file_size << " 字节" << std::endl;
+            } else {
+                std::cout << "上传完成: " << only_filename << " (总大小: " << sent << " 字节)" << std::endl;
+            }
         }else if (cmd =="download"){
             // 发送下载命令
             std::string command = "DOWNLOAD " + only_filename + "\n";

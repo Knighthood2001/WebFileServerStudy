@@ -70,6 +70,8 @@ void handleClient(int clientFd) {
         // 构造文件的完整路径
         std::string fullpath = "filedir/" + basename;
         
+        std::cout << "客户端 " << ipStr << ":" << port << " 请求上传文件" << std::endl;
+        
         // 接收文件大小信息
         std::string sizeLine;
         char ch;
@@ -118,7 +120,7 @@ void handleClient(int clientFd) {
             return;
         }
         
-        std::cout << "准备接收文件: " << basename << " (预期大小: " << filesize << " 字节)" << std::endl;
+        std::cout << "准备接收文件: " << basename << " (预期大小: " << filesize << " 字节) 来自 " << ipStr << ":" << port << std::endl;
         
         // 打开文件准备写入
         std::ofstream outfile(fullpath, std::ios::binary);
@@ -163,13 +165,14 @@ void handleClient(int clientFd) {
         }
         
         outfile.close();
-        std::cout << "上传完成: " << basename << " (大小: " << received << " 字节)" << std::endl;
+        std::cout << "上传完成: " << basename << " (大小: " << received << " 字节) 来自 " << ipStr << ":" << port << std::endl;
 
-    // 如果是下载命令
     } else if (command == "DOWNLOAD") {
         iss >> filename;
         // 获取文件名（不包含路径）
         std::string basename = filename.substr(filename.find_last_of("/\\") + 1);
+        
+        std::cout << "客户端 " << ipStr << ":" << port << " 请求下载文件" << std::endl;
         // 构造文件的完整路径
         std::string fullpath = "filedir/" + basename;
         // 打开文件准备读取
@@ -187,7 +190,7 @@ void handleClient(int clientFd) {
         size_t filesize = infile.tellg();
         infile.seekg(0);
         
-        std::cout << "准备发送文件: " << basename << " (总大小: " << filesize << " 字节)" << std::endl;
+        std::cout << "准备发送文件: " << basename << " (总大小: " << filesize << " 字节) 发送至 " << ipStr << ":" << port << std::endl;
         
         // 构造文件头信息
         std::string header = "OK " + std::to_string(filesize) + "\n";
@@ -213,7 +216,7 @@ void handleClient(int clientFd) {
         }
         
         infile.close();
-        std::cout << "下载完成: " << basename << " (总大小: " << filesize << " 字节)" << std::endl;
+        std::cout << "下载完成: " << basename << " (总大小: " << filesize << " 字节) 发送至 " << ipStr << ":" << port << std::endl;
     }
     // 关闭客户端连接
     close(clientFd);
