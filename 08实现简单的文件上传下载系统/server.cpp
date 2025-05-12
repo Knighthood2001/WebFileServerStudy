@@ -10,6 +10,7 @@
 #include <cstring>
 #include <vector>
 #include <filesystem>
+#include <arpa/inet.h>  //用于将 IP 地址从二进制格式（in_addr 或 in6_addr）转换为文本字符串格式
 #include "threadpool.h"
 
 constexpr int PORT = 8888;
@@ -24,6 +25,20 @@ void setNonBlocking(int fd) {
 
 // 处理上传和下载请求
 void handleClient(int clientFd) {
+
+    //获取客户端的IP地址和端口号
+    sockaddr_in peerAddr{};
+    socklen_t peerLen = sizeof(peerAddr);
+    char ipStr[INET_ADDRSTRLEN] = {0};
+    int port = 0;
+
+    if (getpeername(clientFd, (sockaddr*)&peerAddr, &peerLen) == 0) {
+        inet_ntop(AF_INET, &peerAddr.sin_addr, ipStr, sizeof(ipStr));
+        port = ntohs(peerAddr.sin_port);
+        // std::cout << "客户端连接: " << ipStr << ":" << port << std::endl;
+    }
+
+
     char buffer[BUFFER_SIZE];
     std::string commandLine;
 
@@ -98,8 +113,10 @@ void handleClient(int clientFd) {
         infile.close();
         // 输出下载完成信息
         std::cout << "下载完成: " << basename << std::endl;
+    }else if (command == "exit") {
+        std::cout << "客户端断开连接: " << ipStr << ":" << port << std::endl;
+        // 缺少完善
     }
-
     // 关闭客户端连接
     close(clientFd);
 }
@@ -168,6 +185,12 @@ int main() {
                 sockaddr_in clientAddr{};
                 socklen_t clientLen = sizeof(clientAddr);
                 int clientSock = accept(serverSock, (sockaddr*)&clientAddr, &clientLen);  //有客户端连接进来，使用 accept() 拿到新 socket。
+                //下面四行是用来打印客户端的 IP 和端口，方便调试。
+                char ipStr[INET_ADDRSTRLEN];
+                inet_ntop(AF_INET, &clientAddr.sin_addr, ipStr, sizeof(ipStr));
+                int clientPort = ntohs(clientAddr.sin_port);
+                std::cout << "新连接来自: " << ipStr << ":" << clientPort << std::endl;
+
                 if (clientSock >= 0) {
                     setNonBlocking(clientSock);  //设置客户端 socket 为非阻塞，因为 epoll 边缘触发要求非阻塞行为。否则可能导致死锁或事件错过。
                     epoll_event clientEvent{};  //构造一个 epoll_event 结构体。

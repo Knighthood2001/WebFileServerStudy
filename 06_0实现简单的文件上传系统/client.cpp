@@ -25,8 +25,8 @@ int main() {
     sockaddr_in serverAddr{};
     serverAddr.sin_family = AF_INET;
     serverAddr.sin_port = htons(8888);
-    inet_pton(AF_INET, "127.0.0.1", &serverAddr.sin_addr);
-
+    // inet_pton(AF_INET, "127.0.0.1", &serverAddr.sin_addr);
+    inet_pton(AF_INET, "43.143.168.49", &serverAddr.sin_addr);
     // 连接服务器
     if (connect(sock, (sockaddr*)&serverAddr, sizeof(serverAddr)) < 0) {
         std::cerr << "连接服务器失败" << std::endl;
